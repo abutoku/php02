@@ -1,0 +1,38 @@
+* {
+  box-sizing: border-box;
+  color:#3f3f3f;
+}
+
+#wrapper{
+  width: 90%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* -------------index.php ----------------------------------------*/
+
+#top_h1 {
+  margin-bottom: 24px;
+}
+
+#name_contents,
+#depth_contents,
+#temp_contents {
+  display: flex;
+}
+
+#date_contents {
+  margin-bottom: 24px;
+}
+
+#input_form {
+  margin-bottom: 32px;
+}
+
+#search_form {
+  margin-bottom: 48px;
+}
+
+/* ----------index.phpのoutput部分 -------------------------------*/
+
+
