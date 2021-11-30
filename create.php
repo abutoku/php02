@@ -1,5 +1,7 @@
 <?php
 
+include('functions.php');//関数を使うためfunctions.phpをinclude
+
 //-----------------データ受け取り側では以下の処理を実装する----------------------------//
 
 //必須項目の入力チェック
@@ -23,6 +25,7 @@ if (
   !isset($_POST['temp']) || $_POST['temp'] == ''||
   !isset($_POST['tide']) || $_POST['tide'] == ''||
   !isset($_POST['date']) || $_POST['date'] == ''
+  
 ) {
   exit('ParamError'); //エラーを返す
 }
@@ -34,6 +37,7 @@ $depth = $_POST['depth'];
 $temp = $_POST['temp'];
 $tide = $_POST['tide'];
 $input_date = $_POST['date'];
+$tag = $_POST['tag'];
 
 // var_dump($name);
 // var_dump($category);
@@ -41,6 +45,7 @@ $input_date = $_POST['date'];
 // var_dump($temp);
 // var_dump($tide);
 // var_dump($date);
+// var_dump($tag);
 // exit();
 
 // -------------------------DB接続の必要な項目----------------------------------------//
@@ -54,20 +59,9 @@ $input_date = $_POST['date'];
 
 // ----------------------------------------------------------------------------------//
 
-// 各種項目設定
-$dbn = 'mysql:dbname=gsacf_l06_10;charset=utf8;port=3306;host=localhost';
-$user = 'root';
-$pwd = '';
-
 // DB接続
-try {
-  $pdo = new PDO($dbn, $user, $pwd);
-} catch (PDOException $e) {
-  echo json_encode(["db error" => "{$e->getMessage()}"]);
-  exit();
-}
-
-// 「dbError:...」が表示されたらdb接続でエラーが発生していることがわかる．
+$pdo = connect_to_db();//データベース接続の関数、$pdoに受け取る
+  // 「dbError:...」が表示されたらdb接続でエラーが発生していることがわかる．
 
 //------------SQL（今回は INSERT 文）を実行する場合も手順--------------//
 
@@ -79,7 +73,7 @@ try {
 //---------------------------------------------------------------------//
 
 
-$sql = 'INSERT INTO fish_table (id,fish_name,category,depth,temp,tide,input_date,created_at, updated_at) VALUES (NULL,:fish_name,:category,:depth,:temp,:tide,:input_date,now(), now())';
+$sql = 'INSERT INTO fish_table (id,fish_name,category,depth,temp,tide,input_date,created_at, updated_at,tag) VALUES (NULL,:fish_name,:category,:depth,:temp,:tide,:input_date,now(), now(),:tag)';
 
 $stmt = $pdo->prepare($sql);
 
@@ -90,6 +84,7 @@ $stmt->bindValue(':depth', $depth, PDO::PARAM_STR);
 $stmt->bindValue(':temp', $temp, PDO::PARAM_STR);
 $stmt->bindValue(':tide', $tide, PDO::PARAM_STR);
 $stmt->bindValue(':input_date', $input_date, PDO::PARAM_STR);
+$stmt->bindValue(':tag', $tag, PDO::PARAM_STR);
 
 
 // SQL実行（実行に失敗すると `sql error ...` が出力される）
@@ -100,6 +95,37 @@ try {
   exit();
 }
 //ユーザが入力した値を SQL 文内で使用する場合には必ずバインド変数を使用すること．
+
+if($tag !==""){
+  //exit('ok');
+  $sql = "SELECT * FROM tag_table WHERE tag_name = :tag";
+  $stmt = $pdo->prepare($sql);
+  $stmt->bindValue(':tag', $tag, PDO::PARAM_STR);
+
+  try {
+    $status = $stmt->execute();
+  } catch (PDOException $e) {
+    echo json_encode(["sql error" => "{$e->getMessage()}"]);
+    exit();
+  }
+  $check = $stmt->fetch(PDO::FETCH_ASSOC);
+
+  if($check === false){
+    // var_dump($tag);
+    // exit();
+    $sql = 'INSERT INTO tag_table (tag_id,tag_name,created_at, updated_at) VALUES (NULL,:tag,now(),now())';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':tag', $tag, PDO::PARAM_STR);
+  
+    try {
+      $status = $stmt->execute();
+    } catch (PDOException $e) {
+      echo json_encode(["sql error" => "{$e->getMessage()}"]);
+      exit();
+    }
+  }
+  
+}
 
 // SQL実行の処理
 header('Location:index.php'); //SQL が正常に実行された場合は，データ入力画面に移動

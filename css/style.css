@@ -33,6 +33,10 @@
   margin-bottom: 48px;
 }
 
+#main {
+  display: flex;
+}
+
 /* ----------index.phpのoutput部分 -------------------------------*/
 
 

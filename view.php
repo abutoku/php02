@@ -1,33 +1,24 @@
 <?php
 
+include('functions.php');//関数を使うためfunctions.phpをinclude
+
+
 // var_dump($_POST);
 // exit();
 
+$name_search = $_POST['name_search'];
 $category_search = $_POST['category_search'];
-$tide_search = $_POST['tide_search'];
 
 // var_dump($category_search);
-// var_dump($tide_search);
+// var_dump($name_search);
 // exit();
 
 // DB接続
-
-// 各種項目設定
-$dbn = 'mysql:dbname=gsacf_l06_10;charset=utf8;port=3306;host=localhost';
-$user = 'root';
-$pwd = '';
-
-// DB接続
-try {
-  $pdo = new PDO($dbn, $user, $pwd);
-} catch (PDOException $e) {
-  echo json_encode(["db error" => "{$e->getMessage()}"]);
-  exit();
-}
-// 「dbError:...」が表示されたらdb接続でエラーが発生していることがわかる．
+$pdo = connect_to_db();//データベース接続の関数、$pdoに受け取る
+      // 「dbError:...」が表示されたらdb接続でエラーが発生していることがわかる．
 
 
-//$statusには実行結果が入るが，この時点ではまだデータ自体の取得はできていない点に注意．
+//$statusには実行結果が入るが，この時点ではまだデータ自体の取得はできていない点に注意
 function trysql ($x){
   try {
     $status = $x->execute();
@@ -38,20 +29,35 @@ function trysql ($x){
   // SQL実行の処理
   return  $x->fetchAll(PDO::FETCH_ASSOC); //fetchAll()関数でデータ自体を取得する．
 }
+
+//エラーを返すための変数
 $error_massage = "";
 // SQL作成&実行
-if ($category_search != null && $tide_search != null){
-  $sql = 'SELECT * FROM fish_table WHERE category = :category_search AND tide = :tide_search';
+if ($category_search != null && $name_search != null){
+  $sql = 'SELECT * FROM fish_table WHERE category = :category_search AND fish_name LIKE :name_search ';
   $stmt = $pdo->prepare($sql);
   $stmt->bindValue(':category_search', $category_search, PDO::PARAM_STR);
-  $stmt->bindValue(':tide_search', $tide_search, PDO::PARAM_STR);
+  $stmt->bindValue(':name_search', '%'. $name_search . '%', PDO::PARAM_STR);
+  //SQL実行の処理の関数
   $result = trysql($stmt);
-} else {
-  $error_massage = 'エラー';
-}
+} else if($category_search != null){
+    $sql = 'SELECT * FROM fish_table WHERE category = :category_search';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':category_search', $category_search, PDO::PARAM_STR);
+    //SQL実行の処理の関数
+    $result = trysql($stmt);
+    } else if ($name_search != null) {
+      $sql = 'SELECT * FROM fish_table WHERE fish_name LIKE :name_search ';
+      $stmt = $pdo->prepare($sql);
+      $stmt->bindValue(':name_search', '%' . $name_search . '%', PDO::PARAM_STR);
+      //SQL実行の処理の関数
+      $result = trysql($stmt);
+        }else {
+          $error_massage = 'エラー';
+        };
 
 
-    //取得したデータを確認
+    // //取得したデータを確認
     // echo '<pre>';
     // var_dump($result);
     // echo '</pre>';
@@ -81,9 +87,9 @@ if ($category_search != null && $tide_search != null){
     //繰り返し処理を用いて，取得したデータから HTML タグを生成する．
     $output = "";
     foreach ($result as $record) {
-      $tide = tide_check($record['tide']);
+    $tide = tide_check($record['tide']);
 
-      $output .= "
+    $output .= "
     <div class=\"output_contents\">
       <div id=\"output{$record['id']}\" class =\"test\">
         <div>{$record['fish_name']}  {$record['input_date']}</div>
@@ -97,7 +103,6 @@ if ($category_search != null && $tide_search != null){
     <div>
   ";
     }
-
 
 ?>
 
@@ -116,10 +121,17 @@ if ($category_search != null && $tide_search != null){
 
 <body>
 
-  <div id="output_area">
-    <?= $output ?>
-    <?= $error_massage ?>
-  </div>
+    <div id="wrapper">
+
+      <h1>検索結果</h1>
+    
+      <div id="output_area">
+        <?= $output ?>
+        <?= $error_massage ?>
+      </div>
+      
+    </div>
+
 
   <!-- jquery読み込み -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
